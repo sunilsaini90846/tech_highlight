@@ -40,72 +40,78 @@ const validateConfig = () => {
 }
 
 // Initialize Firebase only once
-let app: FirebaseApp
-let auth: Auth
-let db: Firestore
-let storage: FirebaseStorage
+let app: FirebaseApp | undefined
+let auth: Auth | undefined
+let db: Firestore | undefined
+let storage: FirebaseStorage | undefined
 let analytics: Analytics | null = null
 
-if (typeof window !== 'undefined') {
-  // Client-side initialization
-  validateConfig()
-  
-  // Initialize Firebase app (only once)
-  if (!getApps().length) {
-    app = initializeApp(firebaseConfig)
-  } else {
-    app = getApps()[0]
-  }
+// Initialize Firebase app (works on both server and client)
+const initializeFirebase = () => {
+  if (!app) {
+    validateConfig()
 
-  // Initialize services
-  auth = getAuth(app)
-  db = getFirestore(app)
-  storage = getStorage(app)
-
-  // Initialize Analytics (only in browser, not in SSR)
-  if (process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID) {
-    analytics = getAnalytics(app)
+    // Initialize Firebase app (only once)
+    if (!getApps().length) {
+      app = initializeApp(firebaseConfig)
+    } else {
+      app = getApps()[0]
+    }
   }
+  return app
+}
+
+// Initialize services on demand
+const getFirebaseApp = (): FirebaseApp => {
+  return initializeFirebase()
+}
+
+const getFirebaseAuth = (): Auth => {
+  if (!auth && app) {
+    auth = getAuth(app)
+  }
+  return auth!
+}
+
+const getFirestoreDb = (): Firestore => {
+  if (!db && app) {
+    db = getFirestore(app)
+  }
+  return db!
+}
+
+const getFirebaseStorage = (): FirebaseStorage => {
+  if (!storage && app) {
+    storage = getStorage(app)
+  }
+  return storage!
+}
+
+// Initialize on module load (works for SSR)
+initializeFirebase()
+
+// Initialize Analytics only on client side
+if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID) {
+  analytics = getAnalytics(getFirebaseApp())
 }
 
 /**
  * Get the Firebase Firestore instance
  * @returns {Firestore} Firestore database instance
  */
-export const getFirestoreDb = (): Firestore => {
-  if (!db) {
-    throw new Error(
-      'Firestore is not initialized. This function can only be called on the client side.'
-    )
-  }
-  return db
-}
+export { getFirestoreDb }
 
 /**
  * Get the Firebase Auth instance
  * @returns {Auth} Firebase Auth instance
  */
-export const getFirebaseAuth = (): Auth => {
-  if (!auth) {
-    throw new Error(
-      'Firebase Auth is not initialized. This function can only be called on the client side.'
-    )
-  }
-  return auth
-}
+export { getFirebaseAuth }
 
 /**
  * Get the Firebase Storage instance
  * @returns {FirebaseStorage} Firebase Storage instance
  */
-export const getFirebaseStorage = (): FirebaseStorage => {
-  if (!storage) {
-    throw new Error(
-      'Firebase Storage is not initialized. This function can only be called on the client side.'
-    )
-  }
-  return storage
-}
+export { getFirebaseStorage }
 
 /**
  * Get the Firebase Analytics instance
@@ -119,14 +125,7 @@ export const getFirebaseAnalytics = (): Analytics | null => {
  * Get the Firebase App instance
  * @returns {FirebaseApp} Firebase App instance
  */
-export const getFirebaseApp = (): FirebaseApp => {
-  if (!app) {
-    throw new Error(
-      'Firebase App is not initialized. This function can only be called on the client side.'
-    )
-  }
-  return app
-}
+export { getFirebaseApp }
 
 // Export configured instances for direct use
 export { app, auth, db, storage, analytics }

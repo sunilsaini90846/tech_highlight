@@ -252,6 +252,7 @@ export interface ListNewsFilters {
 }
 
 export interface ListTopicsFilters {
+  limit?: number
   featured?: boolean
   orderBy?: 'order' | 'name' | 'createdAt'
   orderDirection?: 'asc' | 'desc'

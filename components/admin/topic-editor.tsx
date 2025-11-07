@@ -12,8 +12,8 @@ const topicSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
   slug: z.string().min(1, 'Slug is required').max(100, 'Slug too long').regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Invalid slug format'),
   description: z.string().max(500, 'Description too long'),
-  featured: z.boolean().default(false),
-  order: z.number().int().nonnegative().default(0),
+  featured: z.boolean(),
+  order: z.number().int().nonnegative(),
 })
 
 type TopicFormData = z.infer<typeof topicSchema>
@@ -55,7 +55,7 @@ export function TopicEditor({ onSave, onCancel, initialData, isEditing = false }
     }
   }, [watchedName, setValue, initialData?.slug])
 
-  const onSubmit = async (data: TopicFormData) => {
+  const onSubmit = async (data: any) => {
     setIsSubmitting(true)
     try {
       const topicData = {
@@ -63,7 +63,7 @@ export function TopicEditor({ onSave, onCancel, initialData, isEditing = false }
         description: data.description || '',
       }
 
-      const topicId = await saveTopic(topicData, isEditing ? initialData?.id : undefined)
+      const topicId = await saveTopic(topicData)
       onSave(topicId)
     } catch (error) {
       console.error('Failed to save topic:', error)

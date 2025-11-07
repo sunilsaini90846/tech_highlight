@@ -17,6 +17,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://techhighlight.com'),
   title: 'TechHighlight - Curated AI Highlights',
   description: 'Stay informed with curated highlights about AI for a general audience.',
   keywords: ['AI', 'technology', 'news', 'guides', 'tools'],

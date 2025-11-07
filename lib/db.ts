@@ -249,22 +249,27 @@ export async function deleteArticle(id: string): Promise<void> {
 export async function listTopics(filters: ListTopicsFilters = {}): Promise<Topic[]> {
   const db = getFirestoreDb()
   const topicsRef = collection(db, COLLECTIONS.TOPICS).withConverter(topicConverter)
-  
+
   const constraints: QueryConstraint[] = []
-  
+
   // Apply filters
   if (filters.featured !== undefined) {
     constraints.push(where('featured', '==', filters.featured))
   }
-  
+
   // Apply ordering
   const orderByField = filters.orderBy || 'order'
   const orderDirection = filters.orderDirection || 'asc'
   constraints.push(orderBy(orderByField, orderDirection))
-  
+
+  // Apply limit
+  if (filters.limit) {
+    constraints.push(firestoreLimit(filters.limit))
+  }
+
   const q = query(topicsRef, ...constraints)
   const snapshot = await getDocs(q)
-  
+
   return snapshot.docs.map(doc => doc.data())
 }
 
@@ -508,14 +513,33 @@ export async function listNewsletters(limit?: number): Promise<Newsletter[]> {
 export async function getNewsletterById(id: string): Promise<Newsletter | null> {
   const db = getFirestoreDb()
   const newsletterRef = doc(db, COLLECTIONS.NEWSLETTERS, id).withConverter(newsletterConverter)
-  
+
   const snapshot = await getDoc(newsletterRef)
-  
+
   if (!snapshot.exists()) {
     return null
   }
-  
+
   return snapshot.data()
+}
+
+/**
+ * Get the next available issue number
+ */
+export async function getNextIssueNumber(): Promise<number> {
+  const db = getFirestoreDb()
+  const newslettersRef = collection(db, COLLECTIONS.NEWSLETTERS).withConverter(newsletterConverter)
+
+  // Get the highest issue number
+  const q = query(newslettersRef, orderBy('issueNumber', 'desc'), firestoreLimit(1))
+  const snapshot = await getDocs(q)
+
+  if (snapshot.empty) {
+    return 1 // First issue
+  }
+
+  const highestIssue = snapshot.docs[0].data().issueNumber
+  return highestIssue + 1
 }
 
 /**

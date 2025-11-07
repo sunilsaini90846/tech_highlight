@@ -275,6 +275,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
         </div>
       </section>
     </div>
+    </>
   )
 }
 
@@ -353,7 +354,5 @@ function ShareButtons({ title, url }: { title: string; url: string }) {
         </a>
       ))}
     </div>
-    </div>
-    </>
   )
 }
