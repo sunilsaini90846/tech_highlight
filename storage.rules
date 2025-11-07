@@ -1,0 +1,89 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+             request.auth.token.role == 'admin';
+    }
+
+    function isEditor() {
+      return isAuthenticated() &&
+             (request.auth.token.role == 'admin' ||
+              request.auth.token.role == 'editor');
+    }
+
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*') &&
+             request.resource.size < 5 * 1024 * 1024; // 5MB limit
+    }
+
+    function isValidPath() {
+      return request.resource.name.matches('^(images|article-covers|newsletter-covers|topic-images|source-logos)/.*$');
+    }
+
+    // Public read access for all uploaded images (they're meant to be public)
+    match /{allPaths=**} {
+      allow read;
+    }
+
+    // Article cover images
+    match /article-covers/{userId}/{allPaths=**} {
+      allow write: if isEditor() &&
+                      isValidImage() &&
+                      isValidPath() &&
+                      request.auth.uid == userId;
+      allow delete: if isEditor() &&
+                       request.auth.uid == userId;
+    }
+
+    // General images folder (for backwards compatibility)
+    match /images/{userId}/{allPaths=**} {
+      allow write: if isEditor() &&
+                      isValidImage() &&
+                      isValidPath() &&
+                      request.auth.uid == userId;
+      allow delete: if isEditor() &&
+                       request.auth.uid == userId;
+    }
+
+    // Newsletter covers
+    match /newsletter-covers/{userId}/{allPaths=**} {
+      allow write: if isEditor() &&
+                      isValidImage() &&
+                      isValidPath() &&
+                      request.auth.uid == userId;
+      allow delete: if isEditor() &&
+                       request.auth.uid == userId;
+    }
+
+    // Topic images
+    match /topic-images/{userId}/{allPaths=**} {
+      allow write: if isEditor() &&
+                      isValidImage() &&
+                      isValidPath() &&
+                      request.auth.uid == userId;
+      allow delete: if isEditor() &&
+                       request.auth.uid == userId;
+    }
+
+    // Source logos
+    match /source-logos/{userId}/{allPaths=**} {
+      allow write: if isEditor() &&
+                      isValidImage() &&
+                      isValidPath() &&
+                      request.auth.uid == userId;
+      allow delete: if isEditor() &&
+                       request.auth.uid == userId;
+    }
+
+    // Catch-all: deny everything else
+    match /{document=**} {
+      allow read, write, delete: if false;
+    }
+  }
+}

@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================================================================
+    // Helper Functions
+    // =========================================================================
+
+    // Check if user is signed in
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Check if user is admin
+    function isAdmin() {
+      return isSignedIn() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Check if user is admin or editor
+    function isEditor() {
+      return isSignedIn() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'editor'];
+    }
+
+    // =========================================================================
+    // Articles Collection
+    // =========================================================================
+
+    match /articles/{articleId} {
+      // Public can read only published articles that are past their publish date
+      allow read: if resource.data.status == 'published' &&
+                     resource.data.publishedAt <= request.time ||
+                     isEditor();
+
+      // Only authenticated editors/admins can create/update/delete articles
+      allow create, update, delete: if isEditor();
+    }
+
+    // =========================================================================
+    // Topics Collection
+    // =========================================================================
+
+    match /topics/{topicId} {
+      // Public can read all topics
+      allow read: if true;
+
+      // Only authenticated editors/admins can create/update/delete topics
+      allow create, update, delete: if isEditor();
+    }
+
+    // =========================================================================
+    // Sources Collection
+    // =========================================================================
+
+    match /sources/{sourceId} {
+      // No public read access for sources
+      allow read: if isEditor();
+
+      // Only authenticated editors/admins can create/update/delete sources
+      allow create, update, delete: if isEditor();
+    }
+
+    // =========================================================================
+    // Newsletters Collection
+    // =========================================================================
+
+    match /newsletters/{newsletterId} {
+      // Public can read only published newsletters
+      allow read: if resource.data.status == 'sent' ||
+                     isEditor();
+
+      // Only authenticated editors/admins can create/update/delete newsletters
+      allow create, update, delete: if isEditor();
+    }
+
+    // =========================================================================
+    // Users Collection
+    // =========================================================================
+
+    match /users/{userId} {
+      // Users can read their own profile, admins can read all
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+
+      // Only admins can create/update/delete users
+      allow create, update, delete: if isAdmin();
+    }
+  }
+}
+
