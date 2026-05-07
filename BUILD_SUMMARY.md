@@ -164,7 +164,7 @@ Social Links:
 ### Start Development
 ```bash
 cd /Users/sunil/Developer/react_apps/tech_highlight
-npm run dev
+g
 ```
 **Access**: http://localhost:3000
 

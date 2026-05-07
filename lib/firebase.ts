@@ -49,7 +49,10 @@ let analytics: Analytics | null = null
 // Initialize Firebase app (works on both server and client)
 const initializeFirebase = () => {
   if (!app) {
-    validateConfig()
+    // Only validate config on client side to avoid SSR issues
+    if (typeof window !== 'undefined') {
+      validateConfig()
+    }
 
     // Initialize Firebase app (only once)
     if (!getApps().length) {
@@ -61,12 +64,18 @@ const initializeFirebase = () => {
   return app
 }
 
-// Initialize services on demand
+// Initialize services on demand (only on client side)
 const getFirebaseApp = (): FirebaseApp => {
+  if (typeof window === 'undefined') {
+    throw new Error('Firebase can only be used on the client side')
+  }
   return initializeFirebase()
 }
 
 const getFirebaseAuth = (): Auth => {
+  if (typeof window === 'undefined') {
+    throw new Error('Firebase Auth can only be used on the client side')
+  }
   if (!auth && app) {
     auth = getAuth(app)
   }
@@ -74,6 +83,9 @@ const getFirebaseAuth = (): Auth => {
 }
 
 const getFirestoreDb = (): Firestore => {
+  if (typeof window === 'undefined') {
+    throw new Error('Firestore can only be used on the client side')
+  }
   if (!db && app) {
     db = getFirestore(app)
   }
@@ -81,14 +93,16 @@ const getFirestoreDb = (): Firestore => {
 }
 
 const getFirebaseStorage = (): FirebaseStorage => {
+  if (typeof window === 'undefined') {
+    throw new Error('Firebase Storage can only be used on the client side')
+  }
   if (!storage && app) {
     storage = getStorage(app)
   }
   return storage!
 }
 
-// Initialize on module load (works for SSR)
-initializeFirebase()
+// Firebase will be initialized on demand (lazy initialization)
 
 // Initialize Analytics only on client side
 if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID) {
